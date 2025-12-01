@@ -155,71 +155,204 @@
         function buildHouse() {
             if (obj) scene.remove(obj);
             const grp = new THREE.Group();
-            const wm = new THREE.MeshPhongMaterial({ color: 0xF5DEB3, side: THREE.DoubleSide, transparent: true, opacity: 0.95 });
-            const rm = new THREE.MeshPhongMaterial({ color: 0x8B4513, side: THREE.DoubleSide, transparent: true, opacity: 0.95 });
-            const dm = new THREE.MeshPhongMaterial({ color: 0x654321, side: THREE.DoubleSide, transparent: true, opacity: 0.95 });
-            const wim = new THREE.MeshPhongMaterial({ color: 0x87CEEB, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
-            const cm = new THREE.MeshPhongMaterial({ color: 0xA52A2A, side: THREE.DoubleSide, transparent: true, opacity: 0.95 });
-            const s = 2, h = 1.5, r = 1;
+            
+            // Materiales
+            const wm = new THREE.MeshPhongMaterial({ color: 0xE8D5B7, side: THREE.DoubleSide });
+            const rm = new THREE.MeshPhongMaterial({ color: 0x8B4513, side: THREE.DoubleSide });
+            const dm = new THREE.MeshPhongMaterial({ color: 0x654321, side: THREE.DoubleSide });
+            const wim = new THREE.MeshPhongMaterial({ color: 0x87CEEB, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+            const cm = new THREE.MeshPhongMaterial({ color: 0xA52A2A, side: THREE.DoubleSide });
+            const fm = new THREE.MeshPhongMaterial({ color: 0x8B7355, side: THREE.DoubleSide });
+            const tbm = new THREE.MeshPhongMaterial({ color: 0xD2691E, side: THREE.DoubleSide });
+            const chm = new THREE.MeshPhongMaterial({ color: 0xA0522D, side: THREE.DoubleSide });
+            const bedm = new THREE.MeshPhongMaterial({ color: 0xFF6B6B, side: THREE.DoubleSide });
+            
+            const s = 3, h = 2, rh = 1.2;
+            
+            // PISO
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(s, s), fm.clone());
+            floor.rotation.x = -Math.PI/2;
+            floor.position.y = -h/2;
+            floor.userData.f = true;
+            floor.add(new THREE.LineSegments(new THREE.EdgesGeometry(floor.geometry), new THREE.LineBasicMaterial({color:0x555555})));
+            grp.add(floor);
+            
+            // PAREDES (con apertura para puerta frontal)
             const wg = new THREE.PlaneGeometry(s, h);
             
-            const walls = [
-                { p: [0,0,s/2], rot: [0,0,0], mat: wm },
-                { p: [0,0,-s/2], rot: [0,Math.PI,0], mat: wm },
-                { p: [-s/2,0,0], rot: [0,-Math.PI/2,0], mat: wm },
-                { p: [s/2,0,0], rot: [0,Math.PI/2,0], mat: wm }
-            ];
-            walls.forEach(w => {
-                const m = new THREE.Mesh(wg, w.mat.clone());
-                m.position.set(...w.p);
-                m.rotation.set(...w.rot);
-                m.userData.f = true;
-                m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({color:0xffffff})));
-                grp.add(m);
-            });
+            // Pared frontal (dividida por puerta)
+            const fw1 = new THREE.Mesh(new THREE.PlaneGeometry(1, h), wm.clone());
+            fw1.position.set(-s/2+0.5, 0, s/2);
+            fw1.userData.f = true;
+            fw1.add(new THREE.LineSegments(new THREE.EdgesGeometry(fw1.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+            grp.add(fw1);
             
-            const rg = new THREE.PlaneGeometry(s, r*1.2);
-            const rl = new THREE.Mesh(rg, rm.clone());
-            rl.position.set(-s/4, h/2+r/3, 0);
-            rl.rotation.z = Math.PI/4;
+            const fw2 = new THREE.Mesh(new THREE.PlaneGeometry(1, h), wm.clone());
+            fw2.position.set(s/2-0.5, 0, s/2);
+            fw2.userData.f = true;
+            fw2.add(new THREE.LineSegments(new THREE.EdgesGeometry(fw2.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+            grp.add(fw2);
+            
+            const fw3 = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.4), wm.clone());
+            fw3.position.set(0, h/2-0.2, s/2);
+            fw3.userData.f = true;
+            fw3.add(new THREE.LineSegments(new THREE.EdgesGeometry(fw3.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+            grp.add(fw3);
+            
+            // Otras paredes
+            const bw = new THREE.Mesh(wg, wm.clone());
+            bw.position.set(0, 0, -s/2);
+            bw.rotation.y = Math.PI;
+            bw.userData.f = true;
+            bw.add(new THREE.LineSegments(new THREE.EdgesGeometry(bw.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+            grp.add(bw);
+            
+            const lw = new THREE.Mesh(wg, wm.clone());
+            lw.position.set(-s/2, 0, 0);
+            lw.rotation.y = -Math.PI/2;
+            lw.userData.f = true;
+            lw.add(new THREE.LineSegments(new THREE.EdgesGeometry(lw.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+            grp.add(lw);
+            
+            const rw = new THREE.Mesh(wg, wm.clone());
+            rw.position.set(s/2, 0, 0);
+            rw.rotation.y = Math.PI/2;
+            rw.userData.f = true;
+            rw.add(new THREE.LineSegments(new THREE.EdgesGeometry(rw.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+            grp.add(rw);
+            
+            // TECHO A DOS AGUAS (forma triangular realista)
+            const roofW = s * 1.1;
+            const roofD = s * 0.6;
+            
+            const rl = new THREE.Mesh(new THREE.PlaneGeometry(roofW, roofD), rm.clone());
+            rl.position.set(0, h/2 + rh/2, -roofD/4);
+            rl.rotation.x = -Math.PI/6;
             rl.userData.f = true;
-            rl.add(new THREE.LineSegments(new THREE.EdgesGeometry(rl.geometry), new THREE.LineBasicMaterial({color:0xffffff})));
+            rl.add(new THREE.LineSegments(new THREE.EdgesGeometry(rl.geometry), new THREE.LineBasicMaterial({color:0x000000})));
             grp.add(rl);
             
-            const rr = new THREE.Mesh(rg, rm.clone());
-            rr.position.set(s/4, h/2+r/3, 0);
-            rr.rotation.z = -Math.PI/4;
+            const rr = new THREE.Mesh(new THREE.PlaneGeometry(roofW, roofD), rm.clone());
+            rr.position.set(0, h/2 + rh/2, roofD/4);
+            rr.rotation.x = Math.PI/6;
             rr.userData.f = true;
-            rr.add(new THREE.LineSegments(new THREE.EdgesGeometry(rr.geometry), new THREE.LineBasicMaterial({color:0xffffff})));
+            rr.add(new THREE.LineSegments(new THREE.EdgesGeometry(rr.geometry), new THREE.LineBasicMaterial({color:0x000000})));
             grp.add(rr);
             
-            const dg = new THREE.PlaneGeometry(0.5, 0.8);
-            const door = new THREE.Mesh(dg, dm.clone());
-            door.position.set(0, -0.35, s/2+0.01);
+            // Triángulos laterales del techo
+            const tShape = new THREE.Shape();
+            tShape.moveTo(0, 0);
+            tShape.lineTo(s/2, 0);
+            tShape.lineTo(s/4, rh);
+            tShape.lineTo(-s/4, rh);
+            tShape.lineTo(-s/2, 0);
+            
+            const tl = new THREE.Mesh(new THREE.ShapeGeometry(tShape), wm.clone());
+            tl.position.set(0, h/2, s/2);
+            tl.userData.f = true;
+            tl.add(new THREE.LineSegments(new THREE.EdgesGeometry(tl.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+            grp.add(tl);
+            
+            const tr = new THREE.Mesh(new THREE.ShapeGeometry(tShape), wm.clone());
+            tr.position.set(0, h/2, -s/2);
+            tr.rotation.y = Math.PI;
+            tr.userData.f = true;
+            tr.add(new THREE.LineSegments(new THREE.EdgesGeometry(tr.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+            grp.add(tr);
+            
+            // PUERTA
+            const door = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 1.2), dm.clone());
+            door.position.set(0, -h/2+0.6, s/2+0.01);
             door.userData.f = true;
-            door.add(new THREE.LineSegments(new THREE.EdgesGeometry(door.geometry), new THREE.LineBasicMaterial({color:0xffffff})));
+            door.add(new THREE.LineSegments(new THREE.EdgesGeometry(door.geometry), new THREE.LineBasicMaterial({color:0x000000})));
             grp.add(door);
             
-            const wig = new THREE.PlaneGeometry(0.4, 0.4);
-            [[-0.5,0.2,s/2+0.01,0,0,0], [0.5,0.2,s/2+0.01,0,0,0], [-s/2-0.01,0.2,0,0,-Math.PI/2,0], [s/2+0.01,0.2,0,0,Math.PI/2,0]].forEach(w => {
+            // VENTANAS
+            const wig = new THREE.PlaneGeometry(0.5, 0.5);
+            [[-0.7, 0.3, s/2+0.01, 0, 0, 0], [0.7, 0.3, s/2+0.01, 0, 0, 0],
+             [-s/2-0.01, 0.2, -0.5, 0, -Math.PI/2, 0], [s/2+0.01, 0.2, 0.5, 0, Math.PI/2, 0]].forEach(w => {
                 const wi = new THREE.Mesh(wig, wim.clone());
                 wi.position.set(w[0], w[1], w[2]);
                 wi.rotation.set(w[3], w[4], w[5]);
                 wi.userData.f = true;
-                wi.add(new THREE.LineSegments(new THREE.EdgesGeometry(wi.geometry), new THREE.LineBasicMaterial({color:0xffffff})));
+                wi.add(new THREE.LineSegments(new THREE.EdgesGeometry(wi.geometry), new THREE.LineBasicMaterial({color:0x000000})));
                 grp.add(wi);
             });
             
-            const ch = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.6,0.3), cm.clone());
-            ch.position.set(0.5, h/2+r/2+0.1, 0.3);
-            ch.userData.f = true;
-            ch.add(new THREE.LineSegments(new THREE.EdgesGeometry(ch.geometry), new THREE.LineBasicMaterial({color:0xffffff})));
-            grp.add(ch);
+            // CHIMENEA
+            const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), cm.clone());
+            chimney.position.set(0.8, h/2 + rh/2 + 0.2, 0.4);
+            chimney.userData.f = true;
+            chimney.add(new THREE.LineSegments(new THREE.EdgesGeometry(chimney.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+            grp.add(chimney);
+            
+            // ===== MUEBLES INTERIORES =====
+            
+            // MESA (centro)
+            const tableTop = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.8), tbm.clone());
+            tableTop.position.set(0, -h/2+0.4, 0);
+            tableTop.userData.f = true;
+            tableTop.add(new THREE.LineSegments(new THREE.EdgesGeometry(tableTop.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+            grp.add(tableTop);
+            
+            // Patas de mesa
+            for(let x of [-0.3, 0.3]) {
+                for(let z of [-0.3, 0.3]) {
+                    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.35, 0.05), tbm.clone());
+                    leg.position.set(x, -h/2+0.2, z);
+                    leg.userData.f = true;
+                    leg.add(new THREE.LineSegments(new THREE.EdgesGeometry(leg.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+                    grp.add(leg);
+                }
+            }
+            
+            // SILLAS (4 alrededor de la mesa)
+            const chairPos = [
+                [0, -h/2+0.25, 0.6, 0],
+                [0, -h/2+0.25, -0.6, Math.PI],
+                [0.6, -h/2+0.25, 0, -Math.PI/2],
+                [-0.6, -h/2+0.25, 0, Math.PI/2]
+            ];
+            chairPos.forEach(cp => {
+                const seat = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.3), chm.clone());
+                seat.position.set(cp[0], cp[1], cp[2]);
+                seat.rotation.y = cp[3];
+                seat.userData.f = true;
+                seat.add(new THREE.LineSegments(new THREE.EdgesGeometry(seat.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+                grp.add(seat);
+                
+                const back = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.05), chm.clone());
+                back.position.set(cp[0], cp[1]+0.25, cp[2]);
+                back.rotation.y = cp[3];
+                back.userData.f = true;
+                back.add(new THREE.LineSegments(new THREE.EdgesGeometry(back.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+                grp.add(back);
+            });
+            
+            // CAMA (esquina)
+            const bed = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 1.2), bedm.clone());
+            bed.position.set(-s/2+0.5, -h/2+0.1, -s/2+0.7);
+            bed.userData.f = true;
+            bed.add(new THREE.LineSegments(new THREE.EdgesGeometry(bed.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+            grp.add(bed);
+            
+            const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 0.3), new THREE.MeshPhongMaterial({color:0xFFFFFF, side:THREE.DoubleSide}));
+            pillow.position.set(-s/2+0.5, -h/2+0.25, -s/2+0.3);
+            pillow.userData.f = true;
+            pillow.add(new THREE.LineSegments(new THREE.EdgesGeometry(pillow.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+            grp.add(pillow);
+            
+            // ESTANTE (otra esquina)
+            const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.3), new THREE.MeshPhongMaterial({color:0x8B4513, side:THREE.DoubleSide}));
+            shelf.position.set(s/2-0.4, -h/2+0.4, -s/2+0.2);
+            shelf.userData.f = true;
+            shelf.add(new THREE.LineSegments(new THREE.EdgesGeometry(shelf.geometry), new THREE.LineBasicMaterial({color:0x000000})));
+            grp.add(shelf);
             
             obj = grp;
-            obj.scale.set(2,2,2);
-            obj.position.set(0,-0.5,0);
-            obj.rotation.y = Math.PI;
+            obj.scale.set(1.5, 1.5, 1.5);
+            obj.position.set(0, -0.3, 0);
+            obj.rotation.y = Math.PI/4;
             scene.add(obj);
         }
         buildHouse();
